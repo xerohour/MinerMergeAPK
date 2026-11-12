@@ -57,6 +57,7 @@ data class GameUiState(
     val adminPanelUnlocked: Boolean = false,
     val adminCodeInput: String = "",
     val scrollMode: Boolean = false,
+    val manualScrollY: Float = 0f,
     val selectedDebugTier: Int = 0,
     val selectedGridSlot: Pair<Int, Int>? = null
 )
@@ -302,6 +303,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 floatingCoins = emptyList(),
                 particles = emptyList(),
                 cameraScrollY = 0f,
+                manualScrollY = 0f,
                 dropCoinsEarned = 0,
                 chestsReached = 0,
                 levelCompleteReward = null,
@@ -536,6 +538,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 fallingPickaxes = falling,
                 dropCoinsEarned = 0,
                 chestsReached = 0,
+                manualScrollY = 0f,
                 totalDrops = it.totalDrops + 1,
                 floatingCoins = emptyList(),
                 particles = emptyList()
@@ -897,6 +900,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleScrollMode() {
         _uiState.update { it.copy(scrollMode = !it.scrollMode) }
+    }
+
+    fun setManualScrollY(value: Float) {
+        _uiState.update { it.copy(manualScrollY = value) }
     }
 
     fun setDebugTier(tier: Int) {

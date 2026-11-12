@@ -1,6 +1,5 @@
 package com.example.minermerge.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.example.minermerge.model.GamePhase
+import com.example.minermerge.ui.components.BackgroundTerrain
 import com.example.minermerge.ui.components.GameBottomBar
 import com.example.minermerge.ui.components.GameTopBar
 import com.example.minermerge.ui.components.MergeGridView
@@ -48,8 +48,16 @@ fun MinerMergeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(SkyCyan)
         ) {
+            // Sky + parallax terrain backdrop, like the original.
+            BackgroundTerrain(
+                cameraScrollY = state.cameraScrollY,
+                manualScrollY = state.manualScrollY,
+                phase = state.phase,
+                scrollMode = state.scrollMode,
+                modifier = Modifier.fillMaxSize()
+            )
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -77,6 +85,9 @@ fun MinerMergeScreen(
                         selectedSlot = state.selectedGridSlot,
                         onSlotClick = { c, r -> viewModel.selectGridSlot(c, r) },
                         onGiftClick = { giftId -> viewModel.openGift(giftId) },
+                        onMoveOrMerge = { fc, fr, tc, tr ->
+                            viewModel.handleMoveOrMerge(fc, fr, tc, tr)
+                        },
                         modifier = Modifier.padding(bottom = 6.dp)
                     )
                 }
@@ -95,7 +106,9 @@ fun MinerMergeScreen(
                         floatingCoins = state.floatingCoins,
                         cameraScrollY = state.cameraScrollY,
                         phase = state.phase,
-                        scrollMode = state.scrollMode
+                        scrollMode = state.scrollMode,
+                        manualScrollY = state.manualScrollY,
+                        onManualScroll = { viewModel.setManualScrollY(it) }
                     )
                 }
 

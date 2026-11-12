@@ -59,8 +59,9 @@ fun RetroButton(
         Text(
             text = text,
             color = textColor,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1
         )
     }
 }

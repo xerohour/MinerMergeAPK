@@ -81,6 +81,13 @@ fun GameTopBar(
             contentScale = ContentScale.Fit
         )
 
+        Text(
+            text = "remix v1.4",
+            color = Color.White.copy(alpha = 0.85f),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold
+        )
+
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center

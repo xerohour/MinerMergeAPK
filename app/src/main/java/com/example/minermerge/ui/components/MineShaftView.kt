@@ -2,6 +2,7 @@ package com.example.minermerge.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,26 +11,28 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.minermerge.R
 import com.example.minermerge.model.BlockItem
 import com.example.minermerge.model.BlockType
 import com.example.minermerge.model.FloatingCoin
 import com.example.minermerge.model.GamePhase
 import com.example.minermerge.model.PickaxeItem
 import com.example.minermerge.ui.theme.BrightGold
-import kotlin.math.roundToInt
+
 
 @Composable
 fun MineShaftView(
@@ -39,32 +42,61 @@ fun MineShaftView(
     cameraScrollY: Float,
     phase: GamePhase,
     scrollMode: Boolean,
+    manualScrollY: Float,
+    onManualScroll: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val density = LocalDensity.current
+    // Read through updated state inside the gesture handler so a drag that
+    // updates the scroll offset mid-gesture doesn't work from stale values.
+    val manualScrollYState = rememberUpdatedState(manualScrollY)
+    val blocksState = rememberUpdatedState(blocks)
+    val onManualScrollState = rememberUpdatedState(onManualScroll)
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF0F172A))
+            .pointerInput(scrollMode, phase) {
+                // In scroll mode (SETUP phase) the shaft can be panned by
+                // dragging it up/down to look deeper into the mine.
+                if (scrollMode && phase == GamePhase.SETUP) {
+                    detectVerticalDragGestures { _, dragAmount ->
+                        val deltaDp = dragAmount / density.density
+                        val maxRow = blocksState.value.maxOfOrNull { it.row } ?: 0
+                        val blockSizeDp = with(density) { (size.width / 5f).toDp() }
+                        val contentHeightDp = 120f + (maxRow + 1) * blockSizeDp.value
+                        val viewportHeightDp = with(density) { size.height.toDp().value }
+                        val maxScroll = (contentHeightDp - viewportHeightDp).coerceAtLeast(0f)
+                        // Finger down pulls the content down, so the scroll
+                        // offset decreases.
+                        onManualScrollState.value(
+                            (manualScrollYState.value - deltaDp).coerceIn(0f, maxScroll)
+                        )
+                    }
+                }
+            }
     ) {
         val totalWidth = maxWidth
         val blockSizeDp = totalWidth / 5f
         val blockSizePx = 64f // standard physics size
 
-        // Background wallpaper parallax
-        Image(
-            painter = painterResource(id = R.drawable.bg_wallpaper),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop,
-            alpha = 0.45f
-        )
-
-        val scrollOffsetY = if (phase == GamePhase.DROPPING) cameraScrollY else 0f
+        // Physics units (64 per block) to dp: the camera scroll and the
+        // pickaxe positions live in physics space, the blocks live in dp.
+        val scaleFactor = blockSizeDp.value / blockSizePx
+        val contentScrollDp = if (phase == GamePhase.DROPPING) {
+            cameraScrollY * scaleFactor
+        } else {
+            0f
+        }
+        val scrollDp = if (scrollMode && phase == GamePhase.SETUP) {
+            manualScrollY
+        } else {
+            contentScrollDp
+        }
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .offset { IntOffset(0, -scrollOffsetY.roundToInt()) }
+                .offset { IntOffset(0, -scrollDp.dp.roundToPx()) }
         ) {
             // Render Blocks
             for (block in blocks) {
@@ -130,7 +162,6 @@ fun MineShaftView(
             // Render Dropping Pickaxes
             if (phase == GamePhase.DROPPING) {
                 for (pickaxe in fallingPickaxes) {
-                    val scaleFactor = blockSizeDp.value / blockSizePx
                     val px = (pickaxe.x * scaleFactor).dp
                     val py = (pickaxe.y * scaleFactor).dp
 
@@ -152,7 +183,6 @@ fun MineShaftView(
 
             // Render Floating Coin Popups
             for (coin in floatingCoins) {
-                val scaleFactor = blockSizeDp.value / blockSizePx
                 val cx = (coin.x * scaleFactor).dp
                 val cy = (coin.y * scaleFactor).dp
 
