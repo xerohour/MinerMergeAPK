@@ -1,0 +1,6 @@
+{
+  "name": "Miner Merge",
+  "description": "Merge pickaxes, mine blocks, collect lucky loot and dig down to the bottom chests in this casual mining idle puzzle game.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
