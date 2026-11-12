@@ -1,18 +1,24 @@
 package com.example.minermerge.ui.components
 
+import android.content.Context
+import android.graphics.BitmapFactory
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.example.minermerge.R
 import com.example.minermerge.model.GamePhase
 import kotlin.math.ceil
+import kotlin.math.roundToInt
 import kotlin.math.sin
 
 /**
@@ -32,12 +38,16 @@ fun BackgroundTerrain(
     scrollMode: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val grass = imageResource(R.drawable.block_grass)
-    val dirt = imageResource(R.drawable.block_dirt)
-    val stone = imageResource(R.drawable.block_stone)
+    val context = LocalContext.current
+    // Decoded once and remembered: the Canvas redraws every frame while the
+    // camera scrolls, so this must never re-decode.
+    val grass = remember { loadBitmap(context, R.drawable.block_grass) }
+    val dirt = remember { loadBitmap(context, R.drawable.block_dirt) }
+    val stone = remember { loadBitmap(context, R.drawable.block_stone) }
 
     Canvas(modifier = modifier.fillMaxSize()) {
         val blockPx = 28.dp.toPx()
+        val blockSize = IntSize(blockPx.roundToInt(), blockPx.roundToInt())
 
         // How far the mine content has scrolled, in px, so the terrain can
         // trail it at 0.3x. Camera scroll is in physics units (64 per block);
@@ -67,8 +77,10 @@ fun BackgroundTerrain(
                 }
                 drawImage(
                     image = texture,
-                    dstOffset = Offset(x, y),
-                    dstSize = Size(blockPx, blockPx),
+                    srcOffset = IntOffset.Zero,
+                    srcSize = IntSize(texture.width, texture.height),
+                    dstOffset = IntOffset(x.roundToInt(), y.roundToInt()),
+                    dstSize = blockSize,
                     filterQuality = FilterQuality.None
                 )
                 y += blockPx
@@ -76,4 +88,10 @@ fun BackgroundTerrain(
             }
         }
     }
+}
+
+private fun loadBitmap(context: Context, @DrawableRes id: Int): ImageBitmap {
+    val bitmap = BitmapFactory.decodeResource(context.resources, id)
+        ?: error("Could not decode drawable $id")
+    return bitmap.asImageBitmap()
 }
